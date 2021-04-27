@@ -141,6 +141,9 @@ void CheckToSendMail();
 
 bool SendMail = false;
 
+byte FailedMailCounter = 0;
+
+
 //**************************************** EMON LIB ************************************************
 // EmonLibrary examples openenergymonitor.org, Licence GNU GPL V3
 
@@ -586,7 +589,8 @@ void CheckConnection()
 
 //**************************************** HTTPS ************************************************
 
-void SendSlackMsg(String URL, String Message) {
+void SendSlackMsg(String URL, String Message)
+{
   HTTPClient https;
   // Your Domain name with URL path or IP address with path
   https.begin(URL);
@@ -610,7 +614,8 @@ void SendSlackMsg(String URL, String Message) {
   https.end();
 }
 
-void PushSlackMsg(String Msg, bool Info) {
+void PushSlackMsg(String Msg, bool Info)
+{
   //  bool SlackMsgAvaliable[5];
   //  byte SlackMsgCounter;
   //  char *SlackDate[5];
@@ -625,7 +630,8 @@ void PushSlackMsg(String Msg, bool Info) {
   SlackMsgAvaliable[SlackMsgCounter] = true;
 }
 
-void CheckToSendMsg() {
+void CheckToSendMsg()
+{
   if ((!WifiNetworkAvaliable) || (!NTPOK)) {
     return;
   }
@@ -743,7 +749,8 @@ void CheckforReportTime(int Hour, int Minute)
   }
 }
 
-String PowerArrayToString(byte ArrayNumber) {
+String PowerArrayToString(byte ArrayNumber)
+{
   String tmpString;
   byte PowerPosition;
   double Power = PowerArray[ArrayNumber];
@@ -767,12 +774,14 @@ String PowerArrayToString(byte ArrayNumber) {
 }
 
 //**************************************** NTP ************************************************
-void InitNTPTime() {
+void InitNTPTime()
+{
   // Init and get the time
   configTime(gmtOffset_sec, daylightOffset_sec, "time.nist.gov", "0.pool.ntp.org", "1.pool.ntp.org");
 }
 
-void NTPTimeUpdate() {
+void NTPTimeUpdate()
+{
   if (!WifiNetworkAvaliable) {
     return;
   }
@@ -885,7 +894,8 @@ void NTPTimeUpdate() {
   NTPOK = true;
 }
 
-String digitstring(int digit) {
+String digitstring(int digit)
+{
   String strdigit;
   if (digit < 10) {
     strdigit = "0";
@@ -895,12 +905,14 @@ String digitstring(int digit) {
 }
 
 //**************************************** WATCHDOG ************************************************
-void IRAM_ATTR resetModule() {
+void IRAM_ATTR resetModule()
+{
   ets_printf("reboot\n");
   esp_restart();
 }
 
-void InitWatchdog() {
+void InitWatchdog()
+{
   timer = timerBegin(0, 80, true);                  //timer 0, div 80
   timerAttachInterrupt(timer, &resetModule, true);  //attach callback
   timerAlarmWrite(timer, wdtTimeout * 1000, false); //set time in us
@@ -908,13 +920,14 @@ void InitWatchdog() {
   timerAlarmEnable(timer);                          //enable interrupt
 }
 
-void WatchdogReset() {
+void WatchdogReset()
+{
   timerWrite(timer, 0); //reset timer (feed watchdog)
 }
 
 //**************************************** SMTP MAIL ************************************************
-void SendSMTPMail() {
-
+void SendSMTPMail()
+{
   String htmlMsg = "<h1>Täglicher Solaranlagenbericht</h1>"
                    "<p>Hallo " + String(emailNameRecipient) + ", heute den <b>" + formattedDate  + "</b> wurden <b>" + String(MailPTag) + " kWh</b> Solarstrom produziert.<br>"
                    "Spitzenleistung <b>Pmax: " + String(MailPMax) + " kW</b></p>"
@@ -953,23 +966,35 @@ void SendSMTPMail() {
   Serial.println(resp.code);
   Serial.println(resp.desc);
 
-  SendMail = false;
+  if (resp.status) {
+    SendMail = false;
+    FailedMailCounter = 0;
+  } else {
+    delay(1000);
+    FailedMailCounter ++;
+    if (FailedMailCounter > 10) {
+      SendMail = false;
+    }
+  }
 }
 
-void CheckToSendMail() {
+void CheckToSendMail()
+{
   if ((SendMail) && (WifiNetworkAvaliable) && (NTPOK)) {
     SendSMTPMail();
   }
 }
 
 //**************************************** EMON LIB ************************************************
-void InitCurrents() {
+void InitCurrents()
+{
   emons1.current(36, 111.1);             // Current: input pin, calibration.
   emons2.current(37, 111.1);             // Current: input pin, calibration.
   emons3.current(38, 111.1);             // Current: input pin, calibration.
 }
 
-void CalculatePower() {
+void CalculatePower()
+{
   unsigned long currentMillis = millis();
 
   Irms1 = emons1.calcIrms(1480);  // Calculate Irms only
