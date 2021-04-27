@@ -656,19 +656,13 @@ void CheckforReportTime(int Hour, int Minute)
       //Serial.println("Measuring Current");
 
       PowerArray[PowerArrayCounter] = PTag;
-
-      if (PowerArrayCounter == 47) {
-        PowerTimeArray[PowerArrayCounter] = digitstring(Hour + 1) + ":" + digitstring(0);
-      } else {
-        PowerTimeArray[PowerArrayCounter] = digitstring(Hour) + ":" + digitstring(Minute);
-      }
+      PowerTimeArray[PowerArrayCounter] = digitstring(Hour) + ":" + digitstring(Minute);
       PowerArrayCounter ++;
       TookMeasurement = true;
     }
   } else {
     TookMeasurement = false;
   }
-
 
   if ((Hour == TriggerHour ) && (Minute == TriggerMinute) && (ReportSend == false)) {
     if (LaufZeitDay < 1) {
@@ -931,7 +925,7 @@ void SendSMTPMail() {
                    "<br>-30 bis -60dBm – Sehr gute Signalstärke"
                    "<br>-60 bis -80dBm – ausreichende Signalstärke"
                    "<br>-80dBm – schwaches unzureichendes Signal</p>";
-                   
+
   if (LaufZeitDay < 1) {
     htmlMsg = htmlMsg + "<p>" + Laufzeitkleiner24h + "</p>";
   } else {
@@ -948,7 +942,7 @@ void SendSMTPMail() {
   //Serial.println(htmlMsg);
 
   EMailSender::EMailMessage message;
-  message.subject = "Zusammenfassung Gerd Solaranlage";
+  message.subject = "Zusammenfassung Solaranlage";
   message.message = htmlMsg;
 
   EMailSender::Response resp = emailSend.send(emailRecipient, message);
