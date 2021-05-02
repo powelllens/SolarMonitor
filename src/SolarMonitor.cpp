@@ -1,6 +1,6 @@
 #include "Arduino.h"
 //Include Settings File
-#include "SolarMonitorSettings.h"
+#include "config/SolarMonitorSettings.h"
 
 //**************************************** DISPLAY ************************************************
 #include "heltec.h"
