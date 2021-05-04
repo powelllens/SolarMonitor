@@ -43,8 +43,8 @@ void keepWiFiAlive(void *parameter);
 
 #include <HTTPClient.h>
 
-bool SendSlackMsg(String URL, String Message);
-void PushSlackMsg(String Msg, bool Info);
+bool SendSlackMsg(String URL, String &Message);
+void PushSlackMsg(String &Msg, bool Info);
 
 // Used for Slack Messages if Wifi Connection is established
 // Domain Name with full URL Path for HTTPS POST Request
@@ -161,11 +161,14 @@ byte PowerArrayCounter;
 
 String print_reset_reason(RESET_REASON reason);
 
-//**************************************** Task Core 0 ************************************************
-
-// define two tasks for Blink & AnalogRead
-void TaskEthernet(void *pvParameters);
-void TaskLocal(void *pvParameters);
+//**************************************** Task Core ************************************************
+// define tasks
+void TaskDisplay(void *pvParameters);
+void TaskWifi(void *pvParameters);
+void TaskEmon(void *pvParameters);
+void TaskTime(void *pvParameters);
+void TaskMsg(void *pvParameters);
+void TaskSwitch(void *pvParameters);
 
 //**************************************** Button Inputs ************************************************
 
@@ -180,6 +183,74 @@ bool TestMsgSend = false;
 
 void InitSwitch();
 void CheckSwitchState();
+
+//**************************************** SETUP ************************************************
+void setup()
+{
+  Serial.begin(115200);
+  delay(1000);
+
+  Serial.print(F("CPU0 reset reason: "));
+  Serial.println(print_reset_reason(rtc_get_reset_reason(0)));
+
+  Serial.print(F("CPU1 reset reason: "));
+  Serial.println(print_reset_reason(rtc_get_reset_reason(1)));
+
+  delay(500);
+
+  xTaskCreatePinnedToCore(
+      TaskDisplay, "TaskDisplay", 2000 // Stack size
+      ,
+      NULL, 3 // Priority
+      ,
+      NULL, 0);
+  delay(500);
+  // Now set up two tasks to run independently.
+  xTaskCreatePinnedToCore(
+      TaskWifi, "TaskWifi" // A name just for humans
+      ,
+      5000 // This stack size can be checked & adjusted by reading the Stack Highwater
+      ,
+      NULL, 1 // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
+      ,
+      NULL, 0);
+  delay(500);
+  xTaskCreate(
+      TaskEmon, "TaskEmon", 1000 // Stack size
+      ,
+      NULL, 4 // Priority
+      ,
+      NULL);
+  delay(500);
+  xTaskCreate(
+      TaskTime, "TaskTime", 2000 // Stack size
+      ,
+      NULL, 1 // Priority
+      ,
+      NULL);
+  delay(500);
+  xTaskCreate(
+      TaskMsg, "TaskMsg", 6000 // Stack size
+      ,
+      NULL, 1 // Priority
+      ,
+      NULL);
+  delay(500);
+  xTaskCreate(
+      TaskSwitch, "TaskSwitch", 1000 // Stack size
+      ,
+      NULL, 1 // Priority
+      ,
+      NULL);
+
+  // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
+}
+
+//**************************************** MAIN LOOP ************************************************
+void loop()
+{
+  vTaskDelay(1000);
+}
 
 /*--------------------------------------------------*/
 /*---------------------- Tasks ---------------------*/
@@ -783,7 +854,7 @@ void SendTestMsg()
 
 //**************************************** HTTPS ************************************************
 
-bool SendSlackMsg(String URL, String Message)
+bool SendSlackMsg(String URL, String &Message)
 {
   HTTPClient https;
   // Your Domain name with URL path or IP address with path
@@ -812,7 +883,7 @@ bool SendSlackMsg(String URL, String Message)
   return true;
 }
 
-void PushSlackMsg(String Msg, bool Info)
+void PushSlackMsg(String &Msg, bool Info)
 {
   //  bool SlackMsgAvaliable[5];
   //  byte SlackMsgCounter;
@@ -1261,10 +1332,12 @@ double IrmsZero(double input)
 
 void CalculatePower()
 {
-  //1480
-  Irms1 = IrmsZero(emons1.calcIrms(1480)); // Calculate Irms only
-  Irms2 = IrmsZero(emons2.calcIrms(1480)); // Calculate Irms only
-  Irms3 = IrmsZero(emons3.calcIrms(1480)); // Calculate Irms only
+  //Default 1480
+  //https://community.openenergymonitor.org/t/sampling-rate-of-emonlib/4383
+  //https://community.openenergymonitor.org/t/emonlib-esp32-how-to-calibrate/11465
+  Irms1 = IrmsZero(emons1.calcIrms(1676)); // Calculate Irms only
+  Irms2 = IrmsZero(emons2.calcIrms(1676)); // Calculate Irms only
+  Irms3 = IrmsZero(emons3.calcIrms(1676)); // Calculate Irms only
 
   Irms1F = (Irms1F + Irms1) / 2.0;
   Irms2F = (Irms2F + Irms2) / 2.0;
@@ -1376,72 +1449,4 @@ void CheckSwitchState()
       Serial.println("Test Start");
     }
   }
-}
-
-//**************************************** SETUP ************************************************
-void setup()
-{
-  Serial.begin(115200);
-  delay(1000);
-
-  Serial.print(F("CPU0 reset reason: "));
-  Serial.println(print_reset_reason(rtc_get_reset_reason(0)));
-
-  Serial.print(F("CPU1 reset reason: "));
-  Serial.println(print_reset_reason(rtc_get_reset_reason(1)));
-
-  delay(500);
-
-  xTaskCreatePinnedToCore(
-      TaskDisplay, "TaskDisplay", 2000 // Stack size
-      ,
-      NULL, 3 // Priority
-      ,
-      NULL, 0);
-  delay(500);
-  // Now set up two tasks to run independently.
-  xTaskCreatePinnedToCore(
-      TaskWifi, "TaskWifi" // A name just for humans
-      ,
-      5000 // This stack size can be checked & adjusted by reading the Stack Highwater
-      ,
-      NULL, 1 // Priority, with 3 (configMAX_PRIORITIES - 1) being the highest, and 0 being the lowest.
-      ,
-      NULL, 0);
-  delay(500);
-  xTaskCreate(
-      TaskEmon, "TaskEmon", 1000 // Stack size
-      ,
-      NULL, 4 // Priority
-      ,
-      NULL);
-  delay(500);
-  xTaskCreate(
-      TaskTime, "TaskTime", 2000 // Stack size
-      ,
-      NULL, 1 // Priority
-      ,
-      NULL);
-  delay(500);
-  xTaskCreate(
-      TaskMsg, "TaskMsg", 6000 // Stack size
-      ,
-      NULL, 1 // Priority
-      ,
-      NULL);
-  delay(500);
-  xTaskCreate(
-      TaskSwitch, "TaskSwitch", 1000 // Stack size
-      ,
-      NULL, 1 // Priority
-      ,
-      NULL);
-
-  // Now the task scheduler, which takes over control of scheduling individual tasks, is automatically started.
-}
-
-//**************************************** MAIN LOOP ************************************************
-void loop()
-{
-  vTaskDelay(1000);
 }
