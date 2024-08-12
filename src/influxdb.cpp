@@ -58,9 +58,8 @@ void influxdbConClass::loop()
                         temp_sensor_read_celsius(&temp);
             */
             // Set identical time for the whole network scan
-            if ((initalUpload && initaldata) || (!initaldata && !initalUpload))
+            if (!initalUpload)
             {
-                initaldata = false;
                 time_t tnow = time(nullptr);
 
                 Point record("measurement");

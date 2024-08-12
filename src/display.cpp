@@ -207,6 +207,7 @@ void displayClass::sleep()
 {
     display->clear();
     display->display();
+    Wire.end();
     delay(300);
     VextOFF();
 }

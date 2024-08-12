@@ -39,7 +39,6 @@ private:
     unsigned long lastDataTime;
     bool timesynced = false;
     bool initalUpload = true;
-    bool initaldata = true;
 
     uint8_t connectionfailedcounter;
 

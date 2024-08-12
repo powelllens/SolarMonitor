@@ -83,14 +83,15 @@ void emon::emon_task(void *pvParameters) // This is a task.
         P2 = (Irms2F * 230.0) / 1000.0; // Apparent power
         P3 = (Irms3F * 230.0) / 1000.0; // Apparent power
 
+        PGesamt = P1 + P2 + P3;
+
         EmonStartCounter++;
         if (EmonStartCounter >= 20)
         {
             EmonStartCounter = 20;
-            PGesamt = P1 + P2 + P3;
             if (PMax < PGesamt)
             {
-                PMax = PGesamt;
+                PMax = (PMax + PGesamt) / 2.0;
             }
 
             PTag = PTag + (PGesamt / 3600);
