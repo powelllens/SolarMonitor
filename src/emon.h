@@ -38,7 +38,6 @@ private:
 
     static void emon_task(void *pvParameters);
     static TaskHandle_t emon_task_h;
-    static SemaphoreHandle_t sync_emon;
 
 public:
     emon();

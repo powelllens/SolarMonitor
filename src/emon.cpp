@@ -17,14 +17,11 @@ String emon::PowerTimeArray[48];
 uint8_t emon::PowerArrayCounter;
 
 TaskHandle_t emon::emon_task_h;
-SemaphoreHandle_t emon::sync_emon;
 
 emon::emon() {};
 
 void emon::setup()
 {
-    // sync_emon = xSemaphoreCreateMutex();
-    //  Setup the ADC
 
     pinMode(ADC_INPUT_A1, INPUT);
     pinMode(ADC_INPUT_A2, INPUT);
@@ -86,9 +83,9 @@ void emon::emon_task(void *pvParameters) // This is a task.
         PGesamt = P1 + P2 + P3;
 
         EmonStartCounter++;
-        if (EmonStartCounter >= 20)
+        if (EmonStartCounter >= 60)
         {
-            EmonStartCounter = 20;
+            EmonStartCounter = 60;
             if (PMax < PGesamt)
             {
                 PMax = (PMax + PGesamt) / 2.0;
@@ -115,13 +112,3 @@ double emon::IrmsZero(double input)
     }
     return input;
 }
-
-/*
-    #ifndef EMON_IGNORE_THREADSAFETY
-        xSemaphoreTake(sync_emon, portMAX_DELAY);
-#endif
-        uint8_t tmp_dmx = dmx_data[channel];
-#ifndef EMON_IGNORE_THREADSAFETY
-        xSemaphoreGive(sync_serial_dmx);
-#endif
-*/
